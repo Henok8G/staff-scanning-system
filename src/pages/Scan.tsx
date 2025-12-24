@@ -1,0 +1,140 @@
+import { useState, useCallback } from 'react';
+import { Navigate } from 'react-router-dom';
+import { useAuth } from '@/hooks/useAuth';
+import { QRScanner } from '@/components/QRScanner';
+import { SuccessOverlay } from '@/components/SuccessOverlay';
+import { BottomNav } from '@/components/BottomNav';
+import { PendingApproval } from '@/components/PendingApproval';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
+import { Loader2, ScanLine } from 'lucide-react';
+
+export default function Scan() {
+  const { user, loading, staffProfile } = useAuth();
+  const { toast } = useToast();
+  const [isScanning, setIsScanning] = useState(true);
+  const [showSuccess, setShowSuccess] = useState(false);
+  const [successTimestamp, setSuccessTimestamp] = useState('');
+
+  const handleScan = useCallback(async (data: string) => {
+    if (!isScanning) return;
+    
+    setIsScanning(false);
+
+    try {
+      // Parse QR data - expecting just the session ID
+      let qrSessionId = data;
+      
+      // Try to parse as JSON in case it's wrapped
+      try {
+        const parsed = JSON.parse(data);
+        qrSessionId = parsed.qr_session_id || parsed.id || data;
+      } catch {
+        // Not JSON, use as-is
+      }
+
+      const { data: response, error } = await supabase.functions.invoke('scan-qr', {
+        body: { qr_session_id: qrSessionId },
+      });
+
+      if (error) {
+        console.error('Scan error:', error);
+        toast({
+          variant: 'destructive',
+          title: 'Scan Failed',
+          description: 'Unable to process scan. Please try again.',
+        });
+        setIsScanning(true);
+        return;
+      }
+
+      if (response?.success) {
+        setSuccessTimestamp(response.timestamp);
+        setShowSuccess(true);
+      } else {
+        toast({
+          variant: 'destructive',
+          title: 'Scan Error',
+          description: response?.error || 'Please try again.',
+        });
+        setIsScanning(true);
+      }
+    } catch (err) {
+      console.error('Scan error:', err);
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: 'Something went wrong. Please try again.',
+      });
+      setIsScanning(true);
+    }
+  }, [isScanning, toast]);
+
+  const handleSuccessClose = useCallback(() => {
+    setShowSuccess(false);
+    setIsScanning(true);
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (!user) {
+    return <Navigate to="/auth" replace />;
+  }
+
+  if (!staffProfile?.approved) {
+    return <PendingApproval />;
+  }
+
+  return (
+    <div className="min-h-screen bg-background pb-20">
+      {/* Header */}
+      <header className="sticky top-0 z-10 bg-background/80 backdrop-blur-md border-b border-border">
+        <div className="max-w-lg mx-auto px-4 py-4">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl gradient-primary flex items-center justify-center">
+              <ScanLine className="w-5 h-5 text-primary-foreground" />
+            </div>
+            <div>
+              <h1 className="font-semibold text-foreground">QR Scanner</h1>
+              <p className="text-xs text-muted-foreground">Hi, {staffProfile.name}</p>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      {/* Scanner */}
+      <main className="max-w-lg mx-auto px-4 py-6">
+        <div className="mb-6 text-center">
+          <p className="text-muted-foreground">
+            Position the QR code within the frame to scan
+          </p>
+        </div>
+
+        <QRScanner onScan={handleScan} isScanning={isScanning} />
+
+        {!isScanning && !showSuccess && (
+          <div className="flex items-center justify-center mt-6">
+            <Loader2 className="w-6 h-6 animate-spin text-primary" />
+            <span className="ml-2 text-muted-foreground">Processing...</span>
+          </div>
+        )}
+      </main>
+
+      {/* Success Overlay */}
+      {showSuccess && (
+        <SuccessOverlay
+          timestamp={successTimestamp}
+          onClose={handleSuccessClose}
+        />
+      )}
+
+      <BottomNav />
+    </div>
+  );
+}
