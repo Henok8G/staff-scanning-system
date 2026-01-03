@@ -25,6 +25,7 @@ serve(async (req) => {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
     
+    // Create client with user's auth context - RLS will handle permissions
     const supabase = createClient(supabaseUrl, supabaseAnonKey, {
       global: { headers: { Authorization: authHeader } }
     });
@@ -76,12 +77,8 @@ serve(async (req) => {
 
     console.log(`Validating QR session: ${qr_session_id}`);
 
-    // Use service role for database operations
-    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
-
-    // Validate QR session
-    const { data: qrSession, error: qrError } = await supabaseAdmin
+    // Validate QR session (RLS allows authenticated users to read qr_sessions)
+    const { data: qrSession, error: qrError } = await supabase
       .from('qr_sessions')
       .select('*')
       .eq('id', qr_session_id)
@@ -89,8 +86,8 @@ serve(async (req) => {
 
     if (qrError || !qrSession) {
       console.log('QR session not found:', qrError?.message);
-      // Still return success to staff - log as incident internally
-      await supabaseAdmin.from('attendance_logs').insert({
+      // Log as incident - staff can insert their own logs via RLS
+      await supabase.from('attendance_logs').insert({
         staff_id: user.id,
         qr_session_id: qr_session_id,
         status: 'INCIDENT',
@@ -118,16 +115,11 @@ serve(async (req) => {
     }
 
     if (!isIncident) {
-      // Get last attendance status for this staff
-      const { data: lastAttendance } = await supabaseAdmin
-        .from('attendance_logs')
-        .select('status, scanned_at')
-        .eq('staff_id', user.id)
-        .neq('status', 'INCIDENT')
-        .order('scanned_at', { ascending: false })
-        .limit(1)
-        .maybeSingle();
+      // Use the database function to get last attendance status
+      const { data: lastAttendanceData, error: lastAttendanceError } = await supabase
+        .rpc('get_last_attendance_status', { p_staff_id: user.id });
 
+      const lastAttendance = lastAttendanceData?.[0] || null;
       console.log(`Last attendance status: ${lastAttendance?.status || 'none'}`);
 
       if (qrSession.type === 'CHECK_IN') {
@@ -149,11 +141,11 @@ serve(async (req) => {
       }
     }
 
-    // Insert attendance log
+    // Insert attendance log - RLS allows staff to insert their own logs
     const finalStatus = isIncident ? 'INCIDENT' : status;
     console.log(`Recording attendance: ${finalStatus}`);
 
-    const { error: insertError } = await supabaseAdmin
+    const { error: insertError } = await supabase
       .from('attendance_logs')
       .insert({
         staff_id: user.id,
