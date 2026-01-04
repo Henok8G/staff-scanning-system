@@ -21,18 +21,26 @@ export default function History() {
     if (!user || !staffProfile?.approved) return;
 
     const fetchLogs = async () => {
-      const { data, error } = await supabase
-        .from('attendance_logs')
-        .select('id, status, scanned_at')
-        .eq('staff_id', user.id)
-        .neq('status', 'INCIDENT')
-        .order('scanned_at', { ascending: false })
-        .limit(50);
+      try {
+        const session = await supabase.auth.getSession();
+        const token = session.data.session?.access_token;
 
-      if (error) {
+        const response = await fetch('https://qlobfbzhjtzzdjqxcrhu.supabase.co/functions/v1/get-attendance-history', {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+          },
+        });
+
+        const result = await response.json();
+
+        if (response.ok && result.logs) {
+          setLogs(result.logs);
+        } else {
+          console.error('Error fetching logs:', result.error);
+        }
+      } catch (error) {
         console.error('Error fetching logs:', error);
-      } else {
-        setLogs(data || []);
       }
       setLoadingLogs(false);
     };
