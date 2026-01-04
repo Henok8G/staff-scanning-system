@@ -7,6 +7,8 @@ const corsHeaders = {
 };
 
 serve(async (req) => {
+  console.log('Scan QR function invoked');
+  
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -14,6 +16,8 @@ serve(async (req) => {
 
   try {
     const authHeader = req.headers.get('Authorization');
+    console.log('Auth header present:', !!authHeader);
+    
     if (!authHeader) {
       console.log('No authorization header provided');
       return new Response(
@@ -22,8 +26,11 @@ serve(async (req) => {
       );
     }
 
+    // Use Lovable Cloud Supabase (where this edge function runs)
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
+    
+    console.log('Supabase URL:', supabaseUrl);
     
     // Create client with user's auth context - RLS will handle permissions
     const supabase = createClient(supabaseUrl, supabaseAnonKey, {
@@ -32,10 +39,13 @@ serve(async (req) => {
 
     // Get authenticated user
     const { data: { user }, error: userError } = await supabase.auth.getUser();
+    
+    console.log('User auth result:', user?.id || 'no user', userError?.message || 'no error');
+    
     if (userError || !user) {
       console.log('User authentication failed:', userError?.message);
       return new Response(
-        JSON.stringify({ success: false, error: 'Unauthorized' }),
+        JSON.stringify({ success: false, error: 'Unauthorized - ' + (userError?.message || 'No user') }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
