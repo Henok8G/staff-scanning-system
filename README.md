@@ -1,4 +1,4 @@
-# BarberFlow Dashboard
+# Attendance Managment Dashboard
 
 BarberFlow is a modern staff management and attendance tracking dashboard built to manage daily check-ins, check-outs, QR-based attendance validation, and incident reporting for barbershops and similar businesses.
 
