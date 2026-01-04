@@ -1,1 +1,4 @@
-project_id = "qlobfbzhjtzzdjqxcrhu"
+project_id = "qffifkkptvwpunaogkxe"
+
+[functions.scan-qr]
+verify_jwt = false

@@ -7,7 +7,9 @@ import { BottomNav } from '@/components/BottomNav';
 import { PendingApproval } from '@/components/PendingApproval';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, ScanLine } from 'lucide-react';
+import { Loader2, ScanLine, Keyboard } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 
 export default function Scan() {
   const { user, loading, staffProfile } = useAuth();
@@ -15,6 +17,8 @@ export default function Scan() {
   const [isScanning, setIsScanning] = useState(true);
   const [showSuccess, setShowSuccess] = useState(false);
   const [successTimestamp, setSuccessTimestamp] = useState('');
+  const [showManualInput, setShowManualInput] = useState(false);
+  const [manualQrCode, setManualQrCode] = useState('');
 
   const handleScan = useCallback(async (data: string) => {
     if (!isScanning) return;
@@ -73,7 +77,15 @@ export default function Scan() {
   const handleSuccessClose = useCallback(() => {
     setShowSuccess(false);
     setIsScanning(true);
+    setManualQrCode('');
+    setShowManualInput(false);
   }, []);
+
+  const handleManualSubmit = useCallback(() => {
+    if (manualQrCode.trim()) {
+      handleScan(manualQrCode.trim());
+    }
+  }, [manualQrCode, handleScan]);
 
   if (loading) {
     return (
@@ -116,12 +128,56 @@ export default function Scan() {
           </p>
         </div>
 
-        <QRScanner onScan={handleScan} isScanning={isScanning} />
-
-        {!isScanning && !showSuccess && (
-          <div className="flex items-center justify-center mt-6">
-            <Loader2 className="w-6 h-6 animate-spin text-primary" />
-            <span className="ml-2 text-muted-foreground">Processing...</span>
+        {!showManualInput ? (
+          <>
+            <QRScanner onScan={handleScan} isScanning={isScanning} />
+            
+            <Button 
+              variant="outline" 
+              onClick={() => setShowManualInput(true)}
+              className="w-full mt-4"
+            >
+              <Keyboard className="w-4 h-4 mr-2" />
+              Enter QR Code Manually
+            </Button>
+          </>
+        ) : (
+          <div className="space-y-4">
+            <div className="p-4 bg-muted rounded-lg">
+              <p className="text-sm text-muted-foreground mb-3">
+                Paste or type the QR code content below:
+              </p>
+              <Input
+                value={manualQrCode}
+                onChange={(e) => setManualQrCode(e.target.value)}
+                placeholder="Enter QR code..."
+                className="mb-3"
+              />
+              <div className="flex gap-2">
+                <Button 
+                  onClick={handleManualSubmit}
+                  disabled={!manualQrCode.trim() || !isScanning}
+                  className="flex-1"
+                >
+                  Submit
+                </Button>
+                <Button 
+                  variant="outline"
+                  onClick={() => {
+                    setShowManualInput(false);
+                    setManualQrCode('');
+                  }}
+                >
+                  Cancel
+                </Button>
+              </div>
+              {!isScanning && (
+                <div className="flex items-center justify-center mt-4">
+                  <Loader2 className="w-5 h-5 animate-spin text-primary" />
+                  <span className="ml-2 text-sm text-muted-foreground">Processing...</span>
+                </div>
+              )}
+            </div>
           </div>
         )}
       </main>
