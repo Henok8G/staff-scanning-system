@@ -4,7 +4,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { BottomNav } from '@/components/BottomNav';
 import { PendingApproval } from '@/components/PendingApproval';
 import { supabase } from '@/integrations/supabase/client';
-import { Loader2, Clock, ArrowDownLeft, ArrowUpRight, Calendar } from 'lucide-react';
+import { Loader2, Clock, Calendar, User } from 'lucide-react';
 
 interface AttendanceLog {
   id: string;
@@ -12,9 +12,16 @@ interface AttendanceLog {
   scanned_at: string;
 }
 
+interface DayRecord {
+  date: string;
+  checkIn: string | null;
+  checkOut: string | null;
+}
+
 export default function History() {
   const { user, loading, staffProfile } = useAuth();
   const [logs, setLogs] = useState<AttendanceLog[]>([]);
+  const [staffName, setStaffName] = useState<string>('');
   const [loadingLogs, setLoadingLogs] = useState(true);
 
   useEffect(() => {
@@ -34,8 +41,9 @@ export default function History() {
 
         const result = await response.json();
 
-        if (response.ok && result.logs) {
-          setLogs(result.logs);
+        if (response.ok) {
+          setLogs(result.logs || []);
+          setStaffName(result.staffName || '');
         } else {
           console.error('Error fetching logs:', result.error);
         }
@@ -64,19 +72,41 @@ export default function History() {
     return <PendingApproval />;
   }
 
-  // Group logs by date
-  const groupedLogs = logs.reduce((groups, log) => {
-    const date = new Date(log.scanned_at).toLocaleDateString('en-US', {
-      weekday: 'long',
+  // Group logs by date and pair check-ins with check-outs
+  const dayRecords: DayRecord[] = [];
+  const logsByDate = logs.reduce((acc, log) => {
+    const dateKey = new Date(log.scanned_at).toLocaleDateString('en-US', {
+      year: 'numeric',
       month: 'long',
       day: 'numeric',
     });
-    if (!groups[date]) {
-      groups[date] = [];
+    if (!acc[dateKey]) {
+      acc[dateKey] = { checkIn: null, checkOut: null };
     }
-    groups[date].push(log);
-    return groups;
-  }, {} as Record<string, AttendanceLog[]>);
+    if (log.status === 'CHECKED_IN' && !acc[dateKey].checkIn) {
+      acc[dateKey].checkIn = log.scanned_at;
+    }
+    if (log.status === 'CHECKED_OUT' && !acc[dateKey].checkOut) {
+      acc[dateKey].checkOut = log.scanned_at;
+    }
+    return acc;
+  }, {} as Record<string, { checkIn: string | null; checkOut: string | null }>);
+
+  Object.entries(logsByDate).forEach(([date, times]) => {
+    dayRecords.push({
+      date,
+      checkIn: times.checkIn,
+      checkOut: times.checkOut,
+    });
+  });
+
+  const formatTime = (timestamp: string | null) => {
+    if (!timestamp) return '--:--';
+    return new Date(timestamp).toLocaleTimeString('en-US', {
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+  };
 
   return (
     <div className="min-h-screen bg-background pb-20">
@@ -88,8 +118,13 @@ export default function History() {
               <Clock className="w-5 h-5 text-secondary-foreground" />
             </div>
             <div>
-              <h1 className="font-semibold text-foreground">Scan History</h1>
-              <p className="text-xs text-muted-foreground">Your recent scans</p>
+              <h1 className="font-semibold text-foreground">Attendance History</h1>
+              {staffName && (
+                <p className="text-xs text-muted-foreground flex items-center gap-1">
+                  <User className="w-3 h-3" />
+                  {staffName}
+                </p>
+              )}
             </div>
           </div>
         </div>
@@ -101,58 +136,40 @@ export default function History() {
           <div className="flex items-center justify-center py-12">
             <Loader2 className="w-6 h-6 animate-spin text-primary" />
           </div>
-        ) : logs.length === 0 ? (
+        ) : dayRecords.length === 0 ? (
           <div className="text-center py-12">
             <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mx-auto mb-4">
               <Calendar className="w-8 h-8 text-muted-foreground" />
             </div>
-            <h3 className="font-medium text-foreground mb-1">No scans yet</h3>
+            <h3 className="font-medium text-foreground mb-1">No attendance records</h3>
             <p className="text-sm text-muted-foreground">
-              Your scan history will appear here
+              Your attendance will appear here after scanning
             </p>
           </div>
         ) : (
-          <div className="space-y-6">
-            {Object.entries(groupedLogs).map(([date, dateLogs]) => (
-              <div key={date}>
-                <h2 className="text-sm font-medium text-muted-foreground mb-3">
-                  {date}
-                </h2>
-                <div className="space-y-2">
-                  {dateLogs.map((log) => {
-                    const isCheckIn = log.status === 'CHECKED_IN';
-                    const time = new Date(log.scanned_at).toLocaleTimeString('en-US', {
-                      hour: '2-digit',
-                      minute: '2-digit',
-                    });
-
-                    return (
-                      <div
-                        key={log.id}
-                        className="flex items-center gap-4 p-4 bg-card rounded-xl border border-border"
-                      >
-                        <div
-                          className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                            isCheckIn
-                              ? 'bg-success/10 text-success'
-                              : 'bg-primary/10 text-primary'
-                          }`}
-                        >
-                          {isCheckIn ? (
-                            <ArrowDownLeft className="w-5 h-5" />
-                          ) : (
-                            <ArrowUpRight className="w-5 h-5" />
-                          )}
-                        </div>
-                        <div className="flex-1">
-                          <p className="font-medium text-foreground">
-                            {isCheckIn ? 'Check In' : 'Check Out'}
-                          </p>
-                          <p className="text-sm text-muted-foreground">{time}</p>
-                        </div>
-                      </div>
-                    );
-                  })}
+          <div className="space-y-3">
+            {dayRecords.map((record) => (
+              <div
+                key={record.date}
+                className="p-4 bg-card rounded-xl border border-border"
+              >
+                <p className="text-sm font-medium text-muted-foreground mb-3">
+                  {record.date}
+                </p>
+                <div className="flex items-center justify-between">
+                  <div className="text-center flex-1">
+                    <p className="text-xs text-muted-foreground mb-1">Check In</p>
+                    <p className="text-lg font-semibold text-success">
+                      {formatTime(record.checkIn)}
+                    </p>
+                  </div>
+                  <div className="w-px h-10 bg-border" />
+                  <div className="text-center flex-1">
+                    <p className="text-xs text-muted-foreground mb-1">Check Out</p>
+                    <p className="text-lg font-semibold text-primary">
+                      {formatTime(record.checkOut)}
+                    </p>
+                  </div>
                 </div>
               </div>
             ))}
