@@ -1,73 +1,110 @@
-# Welcome to your Lovable project
+# BarberFlow Dashboard
 
-## Project info
+BarberFlow is a modern staff management and attendance tracking dashboard built to manage daily check-ins, check-outs, QR-based attendance validation, and incident reporting for barbershops and similar businesses.
 
-**URL**: https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID
+The system is designed with security, scalability, and real-world workflows in mind and integrates tightly with Supabase for authentication, database, and edge functions.
 
-## How can I edit this code?
+---
 
-There are several ways of editing your application.
+## Features
 
-**Use Lovable**
+- 🔐 Secure authentication using Supabase Auth  
+- 📅 Daily QR code generation for attendance tracking  
+- 📲 QR-based check-in and check-out flow  
+- ⚠️ Incident logging and tracking  
+- 👥 Worker management with owner-based access control (RLS)  
+- 📊 Attendance history and status visibility  
+- ✉️ Optional QR delivery via email (SMTP / Resend supported)  
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and start prompting.
+---
 
-Changes made via Lovable will be committed automatically to this repo.
+## Tech Stack
 
-**Use your preferred IDE**
+- **Frontend:** React + TypeScript  
+- **Build Tool:** Vite  
+- **UI:** Tailwind CSS + shadcn/ui  
+- **Backend:** Supabase (PostgreSQL, Auth, Edge Functions)  
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+---
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+## Project Structure
 
-Follow these steps:
+src/
+components/ # Reusable UI components
+pages/ # Application pages
+integrations/ # Supabase client & external services
+supabase/
+functions/ # Edge functions (QR, attendance, email)
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+yaml
+Copy code
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+---
 
-# Step 3: Install the necessary dependencies.
-npm i
+## Getting Started (Local Development)
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
+### Prerequisites
+
+- Node.js (v18+ recommended)
+- npm or pnpm
+- Supabase project (URL + anon key)
+
+### Setup
+
+```bash
+# Clone the repository
+git clone <YOUR_GIT_REPO_URL>
+
+# Enter the project directory
+cd barberflow-dashboard
+
+# Install dependencies
+npm install
+
+# Start development server
 npm run dev
-```
+Environment Variables
+Create a .env file in the project root:
 
-**Edit a file directly in GitHub**
+env
+Copy code
+VITE_SUPABASE_URL=your_supabase_project_url
+VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
+If email delivery is enabled:
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+env
+Copy code
+RESEND_API_KEY=your_resend_key
+Deployment
+This project can be deployed on any modern frontend hosting platform.
 
-**Use GitHub Codespaces**
+Recommended options:
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+Vercel
 
-## What technologies are used for this project?
+Netlify
 
-This project is built with:
+Cloudflare Pages
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+After deployment, make sure to configure the same environment variables in your hosting provider.
 
-## How can I deploy this project?
+Security Notes
+Row Level Security (RLS) is enforced in Supabase
 
-Simply open [Lovable](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and click on Share -> Publish.
+Owners can only access their own data
 
-## Can I connect a custom domain to my Lovable project?
+Scanner and staff access is strictly limited
 
-Yes, you can!
+QR tokens are validated server-side
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+Scanner Integration
+This dashboard is designed to work with a separate scanner web app that:
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+Authenticates via Supabase
+
+Scans token-only QR codes
+
+Calls secure edge functions to validate attendance
+
+Both apps must use the same Supabase project.
+
