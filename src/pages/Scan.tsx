@@ -20,29 +20,40 @@ export default function Scan() {
   const [showManualInput, setShowManualInput] = useState(false);
   const [manualQrCode, setManualQrCode] = useState('');
 
-  const handleScan = useCallback(async (data: string) => {
+  const handleScan = useCallback(async (scannedData: string) => {
     if (!isScanning) return;
     
     setIsScanning(false);
 
     try {
       // Parse QR data - expecting just the session ID
-      let qrSessionId = data;
+      let qrSessionId = scannedData;
       
       // Try to parse as JSON in case it's wrapped
       try {
-        const parsed = JSON.parse(data);
-        qrSessionId = parsed.qr_session_id || parsed.id || data;
+        const parsed = JSON.parse(scannedData);
+        qrSessionId = parsed.qr_session_id || parsed.id || scannedData;
       } catch {
         // Not JSON, use as-is
       }
 
-      const { data: response, error } = await supabase.functions.invoke('scan-qr', {
-        body: { qr_session_id: qrSessionId },
+      // Call the barberflow validate-scan endpoint
+      const session = await supabase.auth.getSession();
+      const token = session.data.session?.access_token;
+      
+      const response = await fetch('https://qlobfbzhjtzzdjqxcrhu.supabase.co/functions/v1/validate-scan', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({ qr_session_id: qrSessionId }),
       });
+      
+      const result = await response.json();
 
-      if (error) {
-        console.error('Scan error:', error);
+      if (!response.ok) {
+        console.error('Scan error:', result.error);
         toast({
           variant: 'destructive',
           title: 'Scan Failed',
@@ -52,14 +63,14 @@ export default function Scan() {
         return;
       }
 
-      if (response?.success) {
-        setSuccessTimestamp(response.timestamp);
+      if (result?.success) {
+        setSuccessTimestamp(result.timestamp);
         setShowSuccess(true);
       } else {
         toast({
           variant: 'destructive',
           title: 'Scan Error',
-          description: response?.error || 'Please try again.',
+          description: result?.error || 'Please try again.',
         });
         setIsScanning(true);
       }
