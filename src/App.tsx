@@ -8,6 +8,7 @@ import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Scan from "./pages/Scan";
 import History from "./pages/History";
+ import Permission from "./pages/Permission";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -24,6 +25,7 @@ const App = () => (
             <Route path="/auth" element={<Auth />} />
             <Route path="/scan" element={<Scan />} />
             <Route path="/history" element={<History />} />
+             <Route path="/permission" element={<Permission />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
