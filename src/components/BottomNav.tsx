@@ -1,5 +1,5 @@
 import { NavLink, useLocation } from 'react-router-dom';
-import { ScanLine, Clock, LogOut } from 'lucide-react';
+ import { ScanLine, Clock, FileText, LogOut } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 
 export function BottomNav() {
@@ -9,6 +9,7 @@ export function BottomNav() {
   const navItems = [
     { path: '/scan', label: 'Scan', icon: ScanLine },
     { path: '/history', label: 'History', icon: Clock },
+     { path: '/permission', label: 'Permission', icon: FileText },
   ];
 
   return (
