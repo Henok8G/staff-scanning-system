@@ -46,8 +46,8 @@
          return;
        }
  
-       const response = await fetch(
-         `https://gjovydlrjvogavpsufwc.supabase.co/functions/v1/get-workers`,
+        const response = await fetch(
+          `https://qlobfbzhjtzzdjqxcrhu.supabase.co/functions/v1/get-workers`,
          {
            method: 'GET',
            headers: {
@@ -115,8 +115,8 @@
  
        const selectedWorkerData = workers.find(w => w.id === selectedWorker);
  
-       const response = await fetch(
-         `https://gjovydlrjvogavpsufwc.supabase.co/functions/v1/submit-permission-request`,
+        const response = await fetch(
+          `https://qlobfbzhjtzzdjqxcrhu.supabase.co/functions/v1/submit-permission-request`,
          {
            method: 'POST',
            headers: {
