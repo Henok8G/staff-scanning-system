@@ -10,12 +10,15 @@ interface AttendanceLog {
   id: string;
   status: string;
   scanned_at: string;
+  staff_name?: string | null;
 }
 
 interface DayRecord {
   date: string;
   checkIn: string | null;
   checkOut: string | null;
+  checkInName: string | null;
+  checkOutName: string | null;
 }
 
 export default function History() {
@@ -81,22 +84,26 @@ export default function History() {
       day: 'numeric',
     });
     if (!acc[dateKey]) {
-      acc[dateKey] = { checkIn: null, checkOut: null };
+      acc[dateKey] = { checkIn: null, checkOut: null, checkInName: null, checkOutName: null };
     }
     if (log.status === 'CHECKED_IN' && !acc[dateKey].checkIn) {
       acc[dateKey].checkIn = log.scanned_at;
+      acc[dateKey].checkInName = log.staff_name ?? null;
     }
     if (log.status === 'CHECKED_OUT' && !acc[dateKey].checkOut) {
       acc[dateKey].checkOut = log.scanned_at;
+      acc[dateKey].checkOutName = log.staff_name ?? null;
     }
     return acc;
-  }, {} as Record<string, { checkIn: string | null; checkOut: string | null }>);
+  }, {} as Record<string, { checkIn: string | null; checkOut: string | null; checkInName: string | null; checkOutName: string | null }>);
 
   Object.entries(logsByDate).forEach(([date, times]) => {
     dayRecords.push({
       date,
       checkIn: times.checkIn,
       checkOut: times.checkOut,
+      checkInName: times.checkInName,
+      checkOutName: times.checkOutName,
     });
   });
 
@@ -162,6 +169,12 @@ export default function History() {
                     <p className="text-lg font-semibold text-success">
                       {formatTime(record.checkIn)}
                     </p>
+                    {record.checkInName && (
+                      <p className="text-xs text-muted-foreground mt-1 flex items-center justify-center gap-1">
+                        <User className="w-3 h-3" />
+                        {record.checkInName}
+                      </p>
+                    )}
                   </div>
                   <div className="w-px h-10 bg-border" />
                   <div className="text-center flex-1">
@@ -169,6 +182,12 @@ export default function History() {
                     <p className="text-lg font-semibold text-primary">
                       {formatTime(record.checkOut)}
                     </p>
+                    {record.checkOutName && (
+                      <p className="text-xs text-muted-foreground mt-1 flex items-center justify-center gap-1">
+                        <User className="w-3 h-3" />
+                        {record.checkOutName}
+                      </p>
+                    )}
                   </div>
                 </div>
               </div>
