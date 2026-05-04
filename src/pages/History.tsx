@@ -169,6 +169,12 @@ export default function History() {
                     <p className="text-lg font-semibold text-success">
                       {formatTime(record.checkIn)}
                     </p>
+                    {record.checkInName && (
+                      <p className="text-xs text-muted-foreground mt-1 flex items-center justify-center gap-1">
+                        <User className="w-3 h-3" />
+                        {record.checkInName}
+                      </p>
+                    )}
                   </div>
                   <div className="w-px h-10 bg-border" />
                   <div className="text-center flex-1">
@@ -176,6 +182,12 @@ export default function History() {
                     <p className="text-lg font-semibold text-primary">
                       {formatTime(record.checkOut)}
                     </p>
+                    {record.checkOutName && (
+                      <p className="text-xs text-muted-foreground mt-1 flex items-center justify-center gap-1">
+                        <User className="w-3 h-3" />
+                        {record.checkOutName}
+                      </p>
+                    )}
                   </div>
                 </div>
               </div>
