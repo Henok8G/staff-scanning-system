@@ -10,12 +10,15 @@ interface AttendanceLog {
   id: string;
   status: string;
   scanned_at: string;
+  staff_name?: string | null;
 }
 
 interface DayRecord {
   date: string;
   checkIn: string | null;
   checkOut: string | null;
+  checkInName: string | null;
+  checkOutName: string | null;
 }
 
 export default function History() {
