@@ -35,7 +35,7 @@ export default function History() {
         const session = await supabase.auth.getSession();
         const token = session.data.session?.access_token;
 
-        const response = await fetch('https://qlobfbzhjtzzdjqxcrhu.supabase.co/functions/v1/get-attendance-history', {
+        const response = await fetch(`https://qlobfbzhjtzzdjqxcrhu.supabase.co/functions/v1/get-attendance-history?worker_id=${user.id}`, {
           method: 'GET',
           headers: {
             'Authorization': `Bearer ${token}`,
