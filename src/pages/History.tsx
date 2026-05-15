@@ -1,15 +1,18 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { BottomNav } from '@/components/BottomNav';
 import { PendingApproval } from '@/components/PendingApproval';
 import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
 import { Loader2, Clock, Calendar, User } from 'lucide-react';
 
 interface AttendanceLog {
   id: string;
   status: string;
   scanned_at: string;
+  worker_name?: string | null;
+  worker_id?: string | null;
   staff_name?: string | null;
 }
 
@@ -23,41 +26,53 @@ interface DayRecord {
 
 export default function History() {
   const { user, loading, staffProfile } = useAuth();
+  const { toast } = useToast();
   const [logs, setLogs] = useState<AttendanceLog[]>([]);
   const [staffName, setStaffName] = useState<string>('');
+  const [workerId, setWorkerId] = useState<string>('');
   const [loadingLogs, setLoadingLogs] = useState(true);
+
+  const fetchLogs = useCallback(async () => {
+    try {
+      const session = await supabase.auth.getSession();
+      const token = session.data.session?.access_token;
+
+      const response = await fetch(
+        `https://qlobfbzhjtzzdjqxcrhu.supabase.co/functions/v1/get-attendance-history`,
+        {
+          method: 'GET',
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+
+      const result = await response.json();
+
+      if (response.ok) {
+        setLogs(result.logs || []);
+        setStaffName(result.staffName || '');
+        setWorkerId(result.workerId || '');
+      } else {
+        console.error('Error fetching logs:', result.error);
+        toast({
+          variant: 'destructive',
+          title: 'Could not load history',
+          description: result?.error || 'Unknown error',
+        });
+      }
+    } catch (error) {
+      console.error('Error fetching logs:', error);
+    }
+    setLoadingLogs(false);
+  }, [toast]);
 
   useEffect(() => {
     if (!user || !staffProfile?.approved) return;
-
-    const fetchLogs = async () => {
-      try {
-        const session = await supabase.auth.getSession();
-        const token = session.data.session?.access_token;
-
-        const response = await fetch(`https://qlobfbzhjtzzdjqxcrhu.supabase.co/functions/v1/get-attendance-history?worker_id=${user.id}`, {
-          method: 'GET',
-          headers: {
-            'Authorization': `Bearer ${token}`,
-          },
-        });
-
-        const result = await response.json();
-
-        if (response.ok) {
-          setLogs(result.logs || []);
-          setStaffName(result.staffName || '');
-        } else {
-          console.error('Error fetching logs:', result.error);
-        }
-      } catch (error) {
-        console.error('Error fetching logs:', error);
-      }
-      setLoadingLogs(false);
-    };
-
     fetchLogs();
-  }, [user, staffProfile]);
+    const onFocus = () => fetchLogs();
+    window.addEventListener('focus', onFocus);
+    return () => window.removeEventListener('focus', onFocus);
+  }, [user, staffProfile, fetchLogs]);
+
 
   if (loading) {
     return (
@@ -88,11 +103,11 @@ export default function History() {
     }
     if (log.status === 'CHECKED_IN' && !acc[dateKey].checkIn) {
       acc[dateKey].checkIn = log.scanned_at;
-      acc[dateKey].checkInName = log.staff_name ?? null;
+      acc[dateKey].checkInName = log.worker_name ?? log.staff_name ?? null;
     }
     if (log.status === 'CHECKED_OUT' && !acc[dateKey].checkOut) {
       acc[dateKey].checkOut = log.scanned_at;
-      acc[dateKey].checkOutName = log.staff_name ?? null;
+      acc[dateKey].checkOutName = log.worker_name ?? log.staff_name ?? null;
     }
     return acc;
   }, {} as Record<string, { checkIn: string | null; checkOut: string | null; checkInName: string | null; checkOutName: string | null }>);
@@ -130,6 +145,9 @@ export default function History() {
                 <p className="text-xs text-muted-foreground flex items-center gap-1">
                   <User className="w-3 h-3" />
                   {staffName}
+                  {workerId && (
+                    <span className="font-mono ml-1">· {workerId.slice(0, 8)}…</span>
+                  )}
                 </p>
               )}
             </div>

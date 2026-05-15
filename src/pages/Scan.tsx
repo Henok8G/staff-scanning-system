@@ -17,6 +17,9 @@ export default function Scan() {
   const [isScanning, setIsScanning] = useState(true);
   const [showSuccess, setShowSuccess] = useState(false);
   const [successTimestamp, setSuccessTimestamp] = useState('');
+  const [successWorkerName, setSuccessWorkerName] = useState<string | undefined>();
+  const [successWorkerId, setSuccessWorkerId] = useState<string | undefined>();
+  const [successStatus, setSuccessStatus] = useState<string | undefined>();
   const [showManualInput, setShowManualInput] = useState(false);
   const [manualQrCode, setManualQrCode] = useState('');
 
@@ -57,7 +60,7 @@ export default function Scan() {
         toast({
           variant: 'destructive',
           title: 'Scan Failed',
-          description: 'Unable to process scan. Please try again.',
+          description: result?.error || 'Unable to process scan. Please try again.',
         });
         setIsScanning(true);
         return;
@@ -65,6 +68,9 @@ export default function Scan() {
 
       if (result?.success) {
         setSuccessTimestamp(result.timestamp);
+        setSuccessWorkerName(result.worker_name);
+        setSuccessWorkerId(result.worker_id);
+        setSuccessStatus(result.status);
         setShowSuccess(true);
       } else {
         toast({
@@ -198,6 +204,9 @@ export default function Scan() {
         <SuccessOverlay
           timestamp={successTimestamp}
           onClose={handleSuccessClose}
+          workerName={successWorkerName}
+          workerId={successWorkerId}
+          status={successStatus}
         />
       )}
 
