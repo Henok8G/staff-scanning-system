@@ -1,15 +1,18 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { BottomNav } from '@/components/BottomNav';
 import { PendingApproval } from '@/components/PendingApproval';
 import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
 import { Loader2, Clock, Calendar, User } from 'lucide-react';
 
 interface AttendanceLog {
   id: string;
   status: string;
   scanned_at: string;
+  worker_name?: string | null;
+  worker_id?: string | null;
   staff_name?: string | null;
 }
 
@@ -23,41 +26,53 @@ interface DayRecord {
 
 export default function History() {
   const { user, loading, staffProfile } = useAuth();
+  const { toast } = useToast();
   const [logs, setLogs] = useState<AttendanceLog[]>([]);
   const [staffName, setStaffName] = useState<string>('');
+  const [workerId, setWorkerId] = useState<string>('');
   const [loadingLogs, setLoadingLogs] = useState(true);
+
+  const fetchLogs = useCallback(async () => {
+    try {
+      const session = await supabase.auth.getSession();
+      const token = session.data.session?.access_token;
+
+      const response = await fetch(
+        `https://qlobfbzhjtzzdjqxcrhu.supabase.co/functions/v1/get-attendance-history`,
+        {
+          method: 'GET',
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+
+      const result = await response.json();
+
+      if (response.ok) {
+        setLogs(result.logs || []);
+        setStaffName(result.staffName || '');
+        setWorkerId(result.workerId || '');
+      } else {
+        console.error('Error fetching logs:', result.error);
+        toast({
+          variant: 'destructive',
+          title: 'Could not load history',
+          description: result?.error || 'Unknown error',
+        });
+      }
+    } catch (error) {
+      console.error('Error fetching logs:', error);
+    }
+    setLoadingLogs(false);
+  }, [toast]);
 
   useEffect(() => {
     if (!user || !staffProfile?.approved) return;
-
-    const fetchLogs = async () => {
-      try {
-        const session = await supabase.auth.getSession();
-        const token = session.data.session?.access_token;
-
-        const response = await fetch(`https://qlobfbzhjtzzdjqxcrhu.supabase.co/functions/v1/get-attendance-history?worker_id=${user.id}`, {
-          method: 'GET',
-          headers: {
-            'Authorization': `Bearer ${token}`,
-          },
-        });
-
-        const result = await response.json();
-
-        if (response.ok) {
-          setLogs(result.logs || []);
-          setStaffName(result.staffName || '');
-        } else {
-          console.error('Error fetching logs:', result.error);
-        }
-      } catch (error) {
-        console.error('Error fetching logs:', error);
-      }
-      setLoadingLogs(false);
-    };
-
     fetchLogs();
-  }, [user, staffProfile]);
+    const onFocus = () => fetchLogs();
+    window.addEventListener('focus', onFocus);
+    return () => window.removeEventListener('focus', onFocus);
+  }, [user, staffProfile, fetchLogs]);
+
 
   if (loading) {
     return (
