@@ -43,6 +43,15 @@ export function SuccessOverlay({ timestamp, onClose, workerName, workerId, statu
         <p className="text-3xl font-mono font-semibold text-foreground">
           {formattedTime}
         </p>
+        {workerName && (
+          <p className="mt-4 text-base font-medium text-foreground">{workerName}</p>
+        )}
+        {status && (
+          <p className="text-sm text-muted-foreground">{status.replace('_', ' ')}</p>
+        )}
+        {workerId && (
+          <p className="mt-1 text-xs font-mono text-muted-foreground">{workerId.slice(0, 8)}…</p>
+        )}
       </div>
     </div>
   );
