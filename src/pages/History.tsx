@@ -145,6 +145,9 @@ export default function History() {
                 <p className="text-xs text-muted-foreground flex items-center gap-1">
                   <User className="w-3 h-3" />
                   {staffName}
+                  {workerId && (
+                    <span className="font-mono ml-1">· {workerId.slice(0, 8)}…</span>
+                  )}
                 </p>
               )}
             </div>
