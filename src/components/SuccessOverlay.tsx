@@ -4,9 +4,12 @@ import { Check } from 'lucide-react';
 interface SuccessOverlayProps {
   timestamp: string;
   onClose: () => void;
+  workerName?: string;
+  workerId?: string;
+  status?: string;
 }
 
-export function SuccessOverlay({ timestamp, onClose }: SuccessOverlayProps) {
+export function SuccessOverlay({ timestamp, onClose, workerName, workerId, status }: SuccessOverlayProps) {
   useEffect(() => {
     const timer = setTimeout(() => {
       onClose();
