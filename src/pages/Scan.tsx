@@ -60,7 +60,7 @@ export default function Scan() {
         toast({
           variant: 'destructive',
           title: 'Scan Failed',
-          description: 'Unable to process scan. Please try again.',
+          description: result?.error || 'Unable to process scan. Please try again.',
         });
         setIsScanning(true);
         return;
@@ -68,6 +68,9 @@ export default function Scan() {
 
       if (result?.success) {
         setSuccessTimestamp(result.timestamp);
+        setSuccessWorkerName(result.worker_name);
+        setSuccessWorkerId(result.worker_id);
+        setSuccessStatus(result.status);
         setShowSuccess(true);
       } else {
         toast({
