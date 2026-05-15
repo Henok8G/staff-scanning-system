@@ -103,11 +103,11 @@ export default function History() {
     }
     if (log.status === 'CHECKED_IN' && !acc[dateKey].checkIn) {
       acc[dateKey].checkIn = log.scanned_at;
-      acc[dateKey].checkInName = log.staff_name ?? null;
+      acc[dateKey].checkInName = log.worker_name ?? log.staff_name ?? null;
     }
     if (log.status === 'CHECKED_OUT' && !acc[dateKey].checkOut) {
       acc[dateKey].checkOut = log.scanned_at;
-      acc[dateKey].checkOutName = log.staff_name ?? null;
+      acc[dateKey].checkOutName = log.worker_name ?? log.staff_name ?? null;
     }
     return acc;
   }, {} as Record<string, { checkIn: string | null; checkOut: string | null; checkInName: string | null; checkOutName: string | null }>);
