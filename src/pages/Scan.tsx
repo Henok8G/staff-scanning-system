@@ -204,6 +204,9 @@ export default function Scan() {
         <SuccessOverlay
           timestamp={successTimestamp}
           onClose={handleSuccessClose}
+          workerName={successWorkerName}
+          workerId={successWorkerId}
+          status={successStatus}
         />
       )}
 
