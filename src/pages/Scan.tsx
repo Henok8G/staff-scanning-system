@@ -17,6 +17,9 @@ export default function Scan() {
   const [isScanning, setIsScanning] = useState(true);
   const [showSuccess, setShowSuccess] = useState(false);
   const [successTimestamp, setSuccessTimestamp] = useState('');
+  const [successWorkerName, setSuccessWorkerName] = useState<string | undefined>();
+  const [successWorkerId, setSuccessWorkerId] = useState<string | undefined>();
+  const [successStatus, setSuccessStatus] = useState<string | undefined>();
   const [showManualInput, setShowManualInput] = useState(false);
   const [manualQrCode, setManualQrCode] = useState('');
 
